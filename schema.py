@@ -26,7 +26,7 @@ class ChatSchema(BaseModel):
     ChatId: Optional[int] = None
     Content: str
     JSON: Optional[str] = None
-    ProjectName: str
+    ProjectName: Optional[str] = None
     role: Optional[str]
     Type: Optional[str] = None
     CreatedDate: Optional[datetime] = None

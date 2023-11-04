@@ -5,9 +5,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 def create_Db():
 
-    #DATABASE_URL = "postgresql://moazzam99:moazzam99@localhost/requirementsbot"
+    DATABASE_URL = "postgresql://moazzam99:moazzam99@localhost/requirementsbot"
 
-    DATABASE_URL = "postgresql://postgres:unity007@localhost:5432/requirementsbot"
+    #DATABASE_URL = "postgresql://postgres:unity007@localhost:5432/requirementsbot"
 
     engine = create_engine(DATABASE_URL)
 

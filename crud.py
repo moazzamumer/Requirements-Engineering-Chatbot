@@ -75,9 +75,11 @@ def create_chat(db: Session, data: dict):
     db.refresh(chat)
     return chat
 
-def get_chat_by_project_name(db: Session, data: dict):
+def get_chatJSON_by_ProjectName_and_UserEmail(db: Session, data: dict):
     project_name = data.get('ProjectName')
-    return db.query(Chat).filter(Chat.ProjectName == project_name).all()
+    user_email = data.get('UserEmail')
+    # Sort the chat records by CreatedDate in ascending order
+    return db.query(Chat.JSON).filter(Chat.ProjectName == project_name, Chat.UserEmail == user_email).order_by(Chat.CreatedDate.asc()).all()
 
 def update_chat(db: Session, data: dict):
     content = data.get('Content')
