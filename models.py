@@ -3,12 +3,14 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
+from sqlalchemy.orm import registry
 import database
 
 engine, SessionLocal = database.create_Db()
 
 Base = declarative_base()
-Base.metadata.create_all(bind=engine)
+mapper_registry = registry()
+
 
 
 class User(Base):
@@ -25,9 +27,10 @@ class Project(Base):
     ProjectName = Column(String, primary_key=True, index=True)
     BasicInfo = Column(String)
     Details = Column(String)
-    UserId = Column(Integer, ForeignKey('users.UserId'))
+    UserId = Column(Integer, ForeignKey('users.UserId'))  # Correct foreign key reference
     CreatedDate = Column(DateTime, server_default=func.now())
-    user = relationship("User", back_populates="projects")
+    #user = relationship("User", back_populates="projects")
+
 
 class Chat(Base):
     __tablename__ = 'chats'
@@ -39,4 +42,7 @@ class Chat(Base):
     role = Column(String)
     Type = Column(String)
     CreatedDate = Column(DateTime, server_default=func.now())
-    project = relationship("Project", back_populates="chats")
+    #project = relationship("Project", back_populates="chats")
+
+
+Base.metadata.create_all(bind=engine)

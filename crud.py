@@ -21,6 +21,8 @@ def get_user_by_email(db: Session, data: dict):
     email = data.get('email')
     return db.query(User).filter(User.email == email).first()
 
+
+
 def update_user(db: Session, user: User, data: dict):
     user.username = data.get('username', user.username)
     user.password = data.get('password', user.password)
