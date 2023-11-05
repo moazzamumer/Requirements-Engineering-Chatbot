@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Sequence, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Sequence, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -37,7 +37,7 @@ class Chat(Base):
     # Define an auto-incrementing primary key
     ChatId = Column(Integer, primary_key=True, autoincrement=True)
     Content = Column(String)
-    JSON = Column(String)
+    JSON = Column(JSON)
     ProjectName = Column(String, ForeignKey('projects.ProjectName'))
     role = Column(String)
     Type = Column(String)
