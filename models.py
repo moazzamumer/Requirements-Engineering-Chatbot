@@ -41,7 +41,7 @@ class Chat(Base):
     ProjectName = Column(String, ForeignKey('projects.ProjectName'))
     role = Column(String)
     Type = Column(String)
-    UserEmail = Column(String, ForeignKey('users.email'))
+    UserId = Column(Integer, ForeignKey('users.UserId'))
     CreatedDate = Column(DateTime, server_default=func.now())
     #project = relationship("Project", back_populates="chats")
 

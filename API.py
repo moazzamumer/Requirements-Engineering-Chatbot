@@ -1,9 +1,8 @@
 import openai
 import datetime
+import systemPrompts
 from models import *
 from crud import *
-
-
 
 class API():
    
@@ -22,3 +21,14 @@ class API():
         message = response.choices[0]['message']
         return str(message['content'])
         
+   def basicJSONMaker(self, client_chat):
+          response = openai.ChatCompletion.create(
+               model = 'gpt-3.5-turbo',
+               max_tokens = 500,
+               temperature = 0.8,
+               messages = [{"role" : "system", "content" : systemPrompts.getBasicJSONMakerSystemPrompt()},
+                         {"role" : "user", "content" : f"{client_chat}"}]
+               )
+          message = response.choices[0]['message']
+          return str(message['content'])
+       

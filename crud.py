@@ -50,6 +50,10 @@ def get_project_by_name(db: Session, data: dict):
     project_name = data.get('ProjectName')
     return db.query(Project).filter(Project.ProjectName == project_name).first()
 
+def get_projects_by_UserId(db: Session, data: dict):
+    userId = data.get('UserId')
+    return db.query(Project.ProjectName).filter(Project.UserId == userId).all()
+
 def update_project(db: Session, data: dict):
     project_name = data.get('ProjectName')
     project = db.query(Project).filter(Project.ProjectName == project_name).first()
@@ -75,11 +79,19 @@ def create_chat(db: Session, data: dict):
     db.refresh(chat)
     return chat
 
-def get_chatJSON_by_ProjectName_and_UserEmail(db: Session, data: dict):
+def get_chat_by_ProjectName_and_UserId(db: Session, data: dict):
     project_name = data.get('ProjectName')
-    user_email = data.get('UserEmail')
-    # Sort the chat records by CreatedDate in ascending order
-    return db.query(Chat.JSON).filter(Chat.ProjectName == project_name, Chat.UserEmail == user_email).order_by(Chat.CreatedDate.asc()).all()
+    user_id = data.get('UserId')
+    messages = db.query(Chat).filter(Chat.ProjectName == project_name, Chat.UserId == user_id).order_by(Chat.CreatedDate.asc()).all()
+    #roles = db.query(Chat.role).filter(Chat.ProjectName == project_name, Chat.UserId == user_id).order_by(Chat.CreatedDate.asc()).all()
+    #print(messages[0].role)
+    return messages
+
+# def get_chatJSON_by_ProjectName_and_UserId(db: Session, data: dict):
+#     project_name = data.get('ProjectName')
+#     user_id = data.get('UserId')
+#     # Sort the chat records by CreatedDate in ascending order
+#     return db.query(Chat.JSON).filter(Chat.ProjectName == project_name, Chat.UserId == user_id).order_by(Chat.CreatedDate.asc()).all()
 
 def update_chat(db: Session, data: dict):
     content = data.get('Content')

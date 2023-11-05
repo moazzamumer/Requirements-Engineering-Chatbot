@@ -21,7 +21,7 @@ class ProjectCreateRequest(BaseModel):
     ProjectName: str
     BasicInfo: str
     Details: str
-    
+    UserId: int
 
 class ChatSchema(BaseModel):
     ChatId: Optional[int] = None
@@ -30,8 +30,11 @@ class ChatSchema(BaseModel):
     ProjectName: Optional[str] = None
     role: Optional[str]
     Type: Optional[str] = None
-    UserEmail : Optional[str] = None
+    UserId : Optional[int] = None
     CreatedDate: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class ExistingProject(BaseModel):
+    ProjectName: str

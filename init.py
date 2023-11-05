@@ -17,7 +17,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-new_project_name = ''
+global_project_name = ''
 
  # Dependency
 def get_db():
@@ -55,58 +55,77 @@ async def create_new_project(project: schema.ProjectCreateRequest, db:Session = 
     systemPrompt = systemPrompts.getBasicSystemPrompt()
     systemPrompt_json = dict({"role" : "system", "content" : systemPrompt})
     try:
+        project.UserId = id
         project = crud.create_project(db,dict(project))
-        global new_project_name
-        new_project_name = project.ProjectName
+        global global_project_name
+        global_project_name = project.ProjectName
         created_date = datetime.datetime.now()
         systemPrompt_chat = schema.ChatSchema(
-            Content = systemPrompt,
+            Content = "system : " + systemPrompt,
             JSON = systemPrompt_json,
-            ProjectName = new_project_name,
+            ProjectName = global_project_name,
             role = "system",
             Type = "Basic",
-            UserEmail = email,
+            UserId = id,
             CreatedDate = created_date
         )
         crud.create_chat(db, dict(systemPrompt_chat))
     except IntegrityError:
         raise HTTPException(status_code=400, detail="Project with this name already exists")
-
     
+@app.post("/showExistingProjects")
+async def existingProject(db:Session = Depends(get_db)):
+    data = {"UserId" : id}
+    userProjects = crud.get_projects_by_UserId(db, dict(data))
+    return userProjects
+
+@app.post("/continueExistingProject")
+async def continueExistingProject(project: schema.ExistingProject, db:Session = Depends(get_db)):
+    global global_project_name
+    global_project_name = project.ProjectName
+    if crud.get_project_by_name(db, dict({"ProjectName" : global_project_name})):
+        return global_project_name
+    else:
+        raise HTTPException(status_code=400, detail="Project with this name does not exists")
+
+
 @app.post("/BasicContextChat")
 async def response(prompt: schema.ChatSchema, db: Session = Depends(get_db)):
 
-    prompt_json = dict({"role" : "user", "content" : prompt.Content})
+    prompt_json = {"role" : "user", "content" : prompt.Content}
     created_date = datetime.datetime.now()
     prompt_chat_obj = schema.ChatSchema(
-        Content = prompt.Content,
-        ProjectName = new_project_name,
+        Content = "user : " + prompt.Content,
+        ProjectName = global_project_name,
         JSON = prompt_json,
         role = "user",
         Type = "Basic",
-        UserEmail = email,
+        UserId = id,
         CreatedDate = created_date
     )
     
     crud.create_chat(db, dict(prompt_chat_obj))
 
-    data = {"ProjectName" : new_project_name, "UserEmail" : email}
-    chat_array = crud.get_chatJSON_by_ProjectName_and_UserEmail(db, data)
-    #chat_array = [dict(chat[0]) for chat in chat_array if chat]
-    print("\n",chat_array,"\n")
+    data = {"ProjectName" : global_project_name, "UserId" : id}
+    chats = crud.get_chat_by_ProjectName_and_UserId(db, dict(data))
+    chats_array = []
+    for i in chats:
+        chats_array.append(i.JSON)
+    
+    print("\n",chats_array,"\n")
     obj = API()
-    chat_content = str(obj.contextChat(chat_array))
-    response_json = dict({"role":"assistant", "content": chat_content })
+    chat_content = str(obj.contextChat(chats_array))
+    response_json = {"role":"assistant", "content": chat_content }
 
     #Create a new ChatSchema object with the updated content
     created_date = datetime.datetime.now()
     chat_response = schema.ChatSchema(
-        Content = chat_content,
-        ProjectName = new_project_name,
+        Content = "ChatGPT : "+ chat_content,
+        ProjectName = global_project_name,
         JSON = response_json,
         role = 'assistant',
         Type = 'Basic' ,
-        UserEmail = email,
+        UserId = id,
         CreatedDate=created_date
     )
 
@@ -114,3 +133,18 @@ async def response(prompt: schema.ChatSchema, db: Session = Depends(get_db)):
     crud.create_chat(db,dict(chat_response))
 
     return chat_content
+
+@app.post("/BasicJSONMaker")
+async def basicJSONMaker(db: Session = Depends(get_db)):
+    data = {"ProjectName" : global_project_name, "UserId" : id}
+    chats = crud.get_chat_by_ProjectName_and_UserId(db, dict(data))
+    chats_array = []
+    for i in chats:
+        chats_array.append(i.Content)
+    
+    obj = API()
+    json = str(obj.basicJSONMaker(chats_array))
+    update_proj_obj = {"ProjectName" : global_project_name, "BasicInfo" : json, "Details" : ""}
+    crud.update_project(db, dict(update_proj_obj))
+    return json
+
