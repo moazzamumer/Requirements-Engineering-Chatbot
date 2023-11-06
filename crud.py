@@ -52,13 +52,22 @@ def get_project_by_name(db: Session, data: dict):
 
 def get_projects_by_UserId(db: Session, data: dict):
     userId = data.get('UserId')
-    return db.query(Project.ProjectName).filter(Project.UserId == userId).all()
+    return db.query(Project).filter(Project.UserId == userId).all()
 
 def update_project(db: Session, data: dict):
     project_name = data.get('ProjectName')
     project = db.query(Project).filter(Project.ProjectName == project_name).first()
     if project:
         project.BasicInfo = data.get('BasicInfo', project.BasicInfo)
+        project.Details = data.get('Details', project.Details)
+        db.commit()
+        return project
+    
+def update_project_details(db: Session, data: dict):
+    project_name = data.get('ProjectName')
+    project = db.query(Project).filter(Project.ProjectName == project_name).first()
+    if project:
+        #project.BasicInfo = data.get('BasicInfo', project.BasicInfo)
         project.Details = data.get('Details', project.Details)
         db.commit()
         return project

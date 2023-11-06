@@ -50,7 +50,7 @@ async def login(details : schema.login, db:Session=Depends(get_db)):
     id = user.UserId
     return {"message": "Login successful", "user_id": user.UserId}
 
-@app.post("/create_new_project/")
+@app.post("/create_new_project")
 async def create_new_project(project: schema.ProjectCreateRequest, db:Session = Depends(get_db)):
     systemPrompt = systemPrompts.getBasicSystemPrompt()
     systemPrompt_json = dict({"role" : "system", "content" : systemPrompt})
@@ -76,8 +76,11 @@ async def create_new_project(project: schema.ProjectCreateRequest, db:Session = 
 @app.post("/showExistingProjects")
 async def existingProject(db:Session = Depends(get_db)):
     data = {"UserId" : id}
-    userProjects = crud.get_projects_by_UserId(db, dict(data))
-    return userProjects
+    projects = crud.get_projects_by_UserId(db, dict(data))
+    projectNames = []
+    for project in projects:
+        projectNames.append({"Project Name" : project.ProjectName})
+    return projectNames
 
 @app.post("/continueExistingProject")
 async def continueExistingProject(project: schema.ExistingProject, db:Session = Depends(get_db)):
@@ -110,7 +113,8 @@ async def response(prompt: schema.ChatSchema, db: Session = Depends(get_db)):
     chats = crud.get_chat_by_ProjectName_and_UserId(db, dict(data))
     chats_array = []
     for i in chats:
-        chats_array.append(i.JSON)
+        if i.Type == "Basic":
+            chats_array.append(i.JSON)
     
     print("\n",chats_array,"\n")
     obj = API()
@@ -134,8 +138,8 @@ async def response(prompt: schema.ChatSchema, db: Session = Depends(get_db)):
 
     return chat_content
 
-@app.post("/BasicJSONMaker")
-async def basicJSONMaker(db: Session = Depends(get_db)):
+@app.post("/proceedToAdvanceChat")
+async def proceedToAdvanceChat(db: Session = Depends(get_db)):
     data = {"ProjectName" : global_project_name, "UserId" : id}
     chats = crud.get_chat_by_ProjectName_and_UserId(db, dict(data))
     chats_array = []
@@ -146,5 +150,94 @@ async def basicJSONMaker(db: Session = Depends(get_db)):
     json = str(obj.basicJSONMaker(chats_array))
     update_proj_obj = {"ProjectName" : global_project_name, "BasicInfo" : json, "Details" : ""}
     crud.update_project(db, dict(update_proj_obj))
+
+    advancedChatSystemPrompt = systemPrompts.getAdvanceChatSystemPrompt(json)
+    system_prompt_json = {"role" : "system", "content" : advancedChatSystemPrompt}
+
+    created_date = datetime.datetime.now()
+    system_prompt_chat = schema.ChatSchema(
+        Content = "system : "+ advancedChatSystemPrompt,
+        ProjectName = global_project_name,
+        JSON = system_prompt_json,
+        role = 'system',
+        Type = 'Advance' ,
+        UserId = id,
+        CreatedDate=created_date
+    )
+    crud.create_chat(db, dict(system_prompt_chat))
     return json
 
+@app.post("/detailedContextChat")
+async def detailedContextChat(prompt: schema.ChatSchema, db: Session = Depends(get_db)):
+    prompt_json = {"role" : "user", "content" : prompt.Content}
+    created_date = datetime.datetime.now()
+    prompt_chat_obj = schema.ChatSchema(
+        Content = "user : " + prompt.Content,
+        ProjectName = global_project_name,
+        JSON = prompt_json,
+        role = "user",
+        Type = "Advance",
+        UserId = id,
+        CreatedDate = created_date
+    )
+    
+    crud.create_chat(db, dict(prompt_chat_obj))
+
+    data = {"ProjectName" : global_project_name, "UserId" : id}
+    chats = crud.get_chat_by_ProjectName_and_UserId(db, dict(data))
+    chats_array = []
+    for i in chats:
+        if i.Type == "Advance":
+            chats_array.append(i.JSON)
+    
+    print("\n",chats_array,"\n")
+    obj = API()
+    chat_content = str(obj.contextChat(chats_array))
+    response_json = {"role":"assistant", "content": chat_content }
+
+    #Create a new ChatSchema object with the updated content
+    created_date = datetime.datetime.now()
+    chat_response = schema.ChatSchema(
+        Content = "ChatGPT : "+ chat_content,
+        ProjectName = global_project_name,
+        JSON = response_json,
+        role = 'assistant',
+        Type = 'Advance' ,
+        UserId = id,
+        CreatedDate=created_date
+    )
+
+    # Pass the new ChatSchema object to the create_chat function
+    crud.create_chat(db,dict(chat_response))
+
+    return chat_content
+
+@app.post("/projectSummary")
+async def projectSummary(db: Session = Depends(get_db)):
+    data = {"ProjectName" : global_project_name, "UserId" : id}
+    chats = crud.get_chat_by_ProjectName_and_UserId(db, data)
+    chats_array = []
+    for i in chats:
+        if i.Type == "Advance":
+            chats_array.append(i.Content)
+
+    print(chats_array)
+    obj = API()
+    summary = obj.summarize(chats_array)
+
+    update_proj_obj = {"ProjectName" : global_project_name, "Details" : summary}
+    crud.update_project_details(db, dict(update_proj_obj))
+    return summary
+
+@app.post("/viewRequirementsCompletedProjects")
+async def viewProjectRequirementsByClient(db: Session = Depends(get_db)):
+    data = {"UserId" : id}
+    projects = get_projects_by_UserId(db, data)
+    view_array = []
+    for project in projects:
+        if project.Details != "":
+            view_array.append({"Project Name" : project.ProjectName, "Details" : project.Details})
+        else:
+            view_array.append({"Project Name" : project.ProjectName, "Details" : "Requirements Not Completed Yet"})
+    
+    return view_array
